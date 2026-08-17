@@ -1,0 +1,58 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+from xgboost import XGBClassifier
+from imblearn.over_sampling import SMOTE
+from sklearn.preprocessing import LabelEncoder
+
+# Load the dataset
+url = "/content/kyphosis.csv"
+df = pd.read_csv(url)
+
+# Encode the target variable into binary labels
+label_encoder = LabelEncoder()
+df['Kyphosis'] = label_encoder.fit_transform(df['Kyphosis'])
+
+# Separate features and target variable
+X = df.drop('Kyphosis', axis=1)
+y = df['Kyphosis']
+
+# Splitting the dataset into the Training set and Test set
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Apply SMOTE only to training data
+smote = SMOTE(random_state=42)
+X_train_smote, y_train_smote = smote.fit_resample(X_train, y_train)
+
+# Decision Tree Classifier
+dt_classifier = DecisionTreeClassifier(random_state=42)
+dt_classifier.fit(X_train_smote, y_train_smote)
+dt_accuracy = accuracy_score(y_test, dt_classifier.predict(X_test))
+
+# XGBoost Classifier
+xgb_classifier = XGBClassifier(random_state=42)
+xgb_classifier.fit(X_train_smote, y_train_smote)
+xgb_accuracy = accuracy_score(y_test, xgb_classifier.predict(X_test))
+
+# Plotting the comparison
+# Calculate accuracy percentages
+dt_accuracy_percentage = dt_accuracy * 100
+xgb_accuracy_percentage = xgb_accuracy * 100
+
+# Print accuracy percentages
+print(f"Decision Tree Classifier Accuracy: {dt_accuracy_percentage:.2f}%")
+print(f"XGBoost Classifier Accuracy: {xgb_accuracy_percentage:.2f}%")
+
+# Plotting the comparison
+labels = ['Decision Tree', 'XGBoost']
+accuracies = [dt_accuracy, xgb_accuracy]
+
+plt.bar(labels, accuracies, color=['blue', 'green'])
+plt.xlabel('Classifiers')
+plt.ylabel('Accuracy')
+plt.title('Comparison of Decision Tree and XGBoost Accuracy')
+plt.ylim(0.5, 1)
+plt.show()
