@@ -1,0 +1,57 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from xgboost import XGBClassifier
+from sklearn.metrics import accuracy_score
+from imblearn.over_sampling import SMOTE
+from sklearn.preprocessing import LabelEncoder
+import matplotlib.pyplot as plt
+
+# Load dataset
+df = pd.read_csv("/content/kyphosis.csv")
+
+# Encode target variable
+label_encoder = LabelEncoder()
+df['Kyphosis'] = label_encoder.fit_transform(df['Kyphosis'])
+
+# Separate features and target variable
+X = df.drop('Kyphosis', axis=1)
+y = df['Kyphosis']
+
+# Split data into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Apply SMOTE only to training data
+smote = SMOTE(random_state=42)
+X_train_smote, y_train_smote = smote.fit_resample(X_train, y_train)
+
+# Train KNN classifier
+knn_classifier = KNeighborsClassifier()
+knn_classifier.fit(X_train_smote, y_train_smote)
+
+# Train XGBoost classifier
+xgb_classifier = XGBClassifier(random_state=42)
+xgb_classifier.fit(X_train_smote, y_train_smote)
+
+# Predictions
+knn_predictions = knn_classifier.predict(X_test)
+xgb_predictions = xgb_classifier.predict(X_test)
+
+# Calculate accuracies
+knn_accuracy = accuracy_score(y_test, knn_predictions)
+xgb_accuracy = accuracy_score(y_test, xgb_predictions)
+
+# Print accuracies
+print("KNN accuracy: {:.2f}%".format(knn_accuracy * 100))
+print("XGBoost accuracy: {:.2f}%".format(xgb_accuracy * 100))
+
+# Plotting
+labels = ['KNN', 'XGBoost']
+accuracies = [knn_accuracy, xgb_accuracy]
+
+plt.bar(labels, accuracies, color=['blue', 'green'])
+plt.xlabel('Classifier')
+plt.ylabel('Accuracy')
+plt.title('Comparison of KNN and XGBoost for Kyphosis Prediction')
+plt.ylim(0, 1)
+plt.show()
